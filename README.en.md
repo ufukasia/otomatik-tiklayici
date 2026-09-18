@@ -1,4 +1,6 @@
-# Auto Clicker
+# Auto Clicker / Otomatik Tıklayıcı
+
+![Auto Clicker — pick a region, mark the click point, let it find and click](demo.gif)
 
 Mouse and keyboard automation for Windows. It clicks the points you pick, in the
 order and with the delays you set, sends keystrokes and types text — and it can
@@ -80,6 +82,7 @@ once with a Python of each architecture to produce both builds.
 | `kisayol.py` | System-wide hotkeys (`RegisterHotKey`) |
 | `diller.py` | Interface strings (Turkish / English) |
 | `exe_yap.py` | Builds the executable with PyInstaller |
+| `gif_yap.py` | Records the demo GIF above by driving the real app |
 
 ## How it works
 
