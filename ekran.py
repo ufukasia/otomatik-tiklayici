@@ -321,6 +321,15 @@ def ara(ekran, ekran_genislik, ekran_yukseklik, sablon, sablon_genislik, sablon_
     if sablon_genislik > ekran_genislik or sablon_yukseklik > ekran_yukseklik:
         return None
 
+    # Tolerans acikken tarayici ilk KABUL EDILEBILIR eslesmeyi dondurur; bu,
+    # kendine benzeyen desenlerde birkac piksel kaymis bir sonuc verebilir.
+    # Once toleranssiz bak: tam eslesme varsa hep o kazanir.
+    if tolerans > 0:
+        kesin = ara(ekran, ekran_genislik, ekran_yukseklik, sablon,
+                    sablon_genislik, sablon_yukseklik, 0.0, en_fazla_aday)
+        if kesin is not None:
+            return kesin
+
     adim_bayt = ekran_genislik * 4
     sablon_satir_bayt = sablon_genislik * 4
     sablon_satirlar = [sablon[i * sablon_satir_bayt:(i + 1) * sablon_satir_bayt]

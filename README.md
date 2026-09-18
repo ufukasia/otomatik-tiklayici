@@ -39,9 +39,10 @@ görüntüleri kendi bulunduğu klasöre yazar.
 - **Görüntüyle hedefleme** — ekranı karartıp fareyle bir kare çizersiniz, sonra
   **tıklanacak noktayı** işaretlersiniz. Program çalışırken o kareyi ekranda
   arar ve işaretlediğiniz noktaya tıklar; pencere yer değiştirse de bulur.
-- **Koşul (IF)** — "ekranda şu varsa şunu yap". Bir görüntüyü arayıp sonucu
-  `if1`…`if6` yuvalarından birine yazar; sonraki adımları `if1 aktifse` /
-  `if1 pasifse` diye o yuvaya bağlarsınız.
+- **Koşul** — "ekranda şu yazı varsa bu adımı yap". Her adıma isteğe bağlı bir
+  *koşul görüntüsü* verirsiniz: o alan ekranda varsa (ya da yoksa) adım çalışır,
+  yoksa atlanır. Koşul alanı yalnızca aranır, tıklanmaz; adımın tıklayacağı
+  hedef ayrıdır.
 - **Görüntüyü Bekle** — bir pencere/buton belirene kadar bekler, tıklamaz.
 - **Sistem geneli kısayollar** — program arka plandayken de çalışır:
   `F6` başlat/durdur · `F7` konum yakala · `F8` veya `Ctrl+T` durdur ·

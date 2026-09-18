@@ -33,6 +33,13 @@ import motor
 import otomatik_tiklayici as app
 
 winput.dpi_farkindaligi_ac()
+
+def katmani_bekle(gecikme=0.35):
+    """Bolge secici katman ekrana gelene kadar bekler (sabit sleep yerine)."""
+    app.BolgeSecici.acildi.wait(15)
+    time.sleep(gecikme)
+
+
 app.AYAR_DOSYASI = os.path.join(SCRATCH, "gif_ayarlar.json")
 # Uygulama acilirken dili bu dosyadan okur; GIF her iki README'de kullanilacagi
 # icin arayuz Ingilizce olmali.
@@ -155,7 +162,7 @@ BUTON_MERKEZI = (ILK_X + (DUGME[0] + DUGME[2]) // 2, ILK_Y + (DUGME[1] + DUGME[3
 
 
 def surucu():
-    time.sleep(1.9)
+    katmani_bekle()
     x1, y1, x2, y2 = BOLGE
     yumusak_tasi(x1 - 140, y1 - 80, x1, y1, adim=18)
     time.sleep(0.5)
@@ -177,6 +184,7 @@ threading.Thread(target=surucu, daemon=True).start()
 
 u.d_islem.set(motor.islem_adi("sol_tik"))
 u.d_hedef.set("goruntu")
+app.BolgeSecici.acildi.clear()
 u.bolge_sec()
 u.update()
 bekle(0.8)

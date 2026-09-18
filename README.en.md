@@ -41,9 +41,10 @@ images next to itself.
 - **Image targeting** — the screen dims, you drag a box around what to look for,
   then mark **the point to click**. While running it searches for that box on
   screen and clicks the point you marked, even if the window has moved.
-- **Condition (IF)** — "if this is on screen, do that". A step searches for an
-  image and writes the result into one of `if1`…`if6`; later steps are bound to
-  a slot with `if if1 is active` / `if if1 is inactive`.
+- **Condition** — "run this step only if that text is on screen". Each step can
+  carry an optional *condition image*: the step runs when that area is on screen
+  (or when it is not) and is skipped otherwise. The condition area is only
+  searched, never clicked; what the step clicks stays separate.
 - **Wait For Image** — waits until a window or button appears, without clicking.
 - **System-wide hotkeys**, working even when the window is in the background:
   `F6` start/stop · `F7` capture position · `F8` or `Ctrl+T` stop ·

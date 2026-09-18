@@ -51,7 +51,6 @@ ISLEMLER = {
     "birak":         {"konum": True,  "deger": None},
     "tekerlek":      {"konum": True,  "deger": "deger.tekerlek"},
     "goruntu_bekle": {"konum": True,  "deger": None, "goruntu_sart": True},
-    "kosul":         {"konum": True,  "deger": None, "goruntu_sart": True},
     "tus":           {"konum": False, "deger": "deger.tus"},
     "metin":         {"konum": False, "deger": "deger.metin"},
     "bekle":         {"konum": False, "deger": None},
@@ -100,32 +99,25 @@ def bulunamazsa_kodu(etiket, varsayilan="durdur"):
     return varsayilan
 
 
-# Kosul yuvalari: "Kosul (IF)" adimi bir goruntuyu ekranda arar ve sonuca gore
-# secilen yuvayi aktif/pasif yapar. Diger adimlar da bir yuvaya bagli calisabilir.
-KOSUL_ADLARI = ["if%d" % i for i in range(1, 7)]
-
-HER_ZAMAN = ""
-KOSUL_KODLARI = [HER_ZAMAN]
-for _ad in KOSUL_ADLARI:
-    KOSUL_KODLARI += [_ad, "!" + _ad]
+# Kosul: her adim, istege bagli olarak kendi "kosul goruntusune" baglanabilir.
+# O goruntu ekranda varsa (ya da yoksa) adim calisir, aksi halde atlanir.
+# Kosul goruntusu yalnizca ARANIR; uzerine tiklanmaz.
+KOSULSUZ = ""
+KOSUL_TURLERI = [KOSULSUZ, "var", "yok"]
 
 
-def kosul_sart_etiketi(kod):
-    if not kod:
-        return M("kosul.her_zaman")
-    if kod.startswith("!"):
-        return M("kosul.pasifse") % kod[1:]
-    return M("kosul.aktifse") % kod
+def kosul_turu_etiketi(tur):
+    return M({"var": "kosul.tur_var", "yok": "kosul.tur_yok"}.get(tur, "kosul.tur_"))
 
 
-def kosul_sart_secenekleri():
-    return [kosul_sart_etiketi(k) for k in KOSUL_KODLARI]
+def kosul_turu_secenekleri():
+    return [kosul_turu_etiketi(t) for t in KOSUL_TURLERI]
 
 
-def kosul_sart_kodu(etiket, varsayilan=HER_ZAMAN):
-    for kod in KOSUL_KODLARI:
-        if kosul_sart_etiketi(kod) == etiket:
-            return kod
+def kosul_turu_kodu(etiket, varsayilan=KOSULSUZ):
+    for tur in KOSUL_TURLERI:
+        if kosul_turu_etiketi(tur) == etiket:
+            return tur
     return varsayilan
 
 
@@ -147,11 +139,13 @@ def bos_adim(tip="sol_tik"):
         "x": x,
         "y": y,
         "goruntu": "",
-        "kosul_adi": KOSUL_ADLARI[0],   # "Koşul (IF)" adiminin yazacagi yuva
-        "kosul_sart": HER_ZAMAN,        # bu adimin calismasi icin gereken kosul
+        # Kosul: bu adim yalnizca su goruntu ekranda varsa/yoksa calisir
+        "kosul_turu": KOSULSUZ,         # "" | "var" | "yok"
+        "kosul_goruntu": "",            # aranacak kosul goruntusu (tiklanmaz)
+        "kosul_esik": 5,                # kosul icin eslesme toleransi, yuzde
+        "kosul_zaman_asimi": 0,         # kosul icin en fazla arama suresi (ms)
         "esik": 5,             # eslesme toleransi, yuzde
-        # Kosul kontrolu anlik bakar; digerleri gorunmesini bir sure bekler
-        "zaman_asimi": 0 if tip == "kosul" else 5000,
+        "zaman_asimi": 5000,   # hedef goruntu icin beklenecek en fazla sure (ms)
         "kaydir_x": 0,         # bulunan bolgenin merkezine gore kayma
         "kaydir_y": 0,
         "bulunamazsa": "durdur",
@@ -178,10 +172,19 @@ def adimi_dogrula(adim):
         return M("hata.tekrar")
     if adim.get("bekleme", 0) < 0:
         return M("hata.bekleme")
-    if adim.get("kosul_sart", HER_ZAMAN) not in KOSUL_KODLARI:
-        return M("hata.kosul_sart") % adim.get("kosul_sart")
-    if tip == "kosul" and adim.get("kosul_adi") not in KOSUL_ADLARI:
-        return M("hata.kosul_adi") % ", ".join(KOSUL_ADLARI)
+    kosul_turu = adim.get("kosul_turu", KOSULSUZ)
+    if kosul_turu not in KOSUL_TURLERI:
+        return M("hata.kosul_turu") % kosul_turu
+    if kosul_turu:
+        kosul_ad = str(adim.get("kosul_goruntu", "")).strip()
+        if not kosul_ad:
+            return M("hata.kosul_goruntu_yok")
+        if not os.path.isfile(goruntu_yolu(kosul_ad)):
+            return M("hata.kosul_goruntu_dosya") % kosul_ad
+        if not 0 <= adim.get("kosul_esik", 0) <= 100:
+            return M("hata.tolerans")
+        if adim.get("kosul_zaman_asimi", 0) < 0:
+            return M("hata.arama_suresi")
 
     if bilgi["konum"]:
         if bilgi.get("goruntu_sart") and not goruntu_hedefli(adim):
@@ -230,33 +233,16 @@ def hedef_metni(adim):
 
 def kosul_metni(adim):
     """Listede gosterilecek kosul sutunu metni."""
-    if adim["tip"] == "kosul":
-        return M("kosul.belirle") % adim.get("kosul_adi", KOSUL_ADLARI[0])
-    sart = adim.get("kosul_sart", HER_ZAMAN)
-    if not sart:
+    tur = adim.get("kosul_turu", KOSULSUZ)
+    if not tur:
         return ""
-    return kosul_sart_etiketi(sart)
-
-
-def kosullari_toplar(adimlar):
-    """(belirlenen yuvalar, kullanilan yuvalar) ciftini dondurur."""
-    belirlenen, kullanilan = set(), set()
-    for adim in adimlar:
-        if not adim.get("aktif", True):
-            continue
-        if adim["tip"] == "kosul":
-            belirlenen.add(adim.get("kosul_adi"))
-        sart = adim.get("kosul_sart", HER_ZAMAN)
-        if sart:
-            kullanilan.add(sart.lstrip("!"))
-    return belirlenen, kullanilan
+    ad = adim.get("kosul_goruntu") or "-"
+    return M("kosul.liste_var" if tur == "var" else "kosul.liste_yok") % ad
 
 
 def adim_ozeti(adim):
     bilgi = ISLEMLER.get(adim["tip"], {"konum": False})
     parcalar = [islem_adi(adim["tip"]) if adim["tip"] in ISLEMLER else adim["tip"]]
-    if adim["tip"] == "kosul":
-        parcalar.append("→ %s" % adim.get("kosul_adi", KOSUL_ADLARI[0]))
     if bilgi["konum"]:
         parcalar.append(hedef_metni(adim))
     if adim.get("deger"):
@@ -283,7 +269,6 @@ class Oynatici(threading.Thread):
         self.dur_olayi = threading.Event()
         self.duraklat_olayi = threading.Event()
         self._basili_dugmeler = set()
-        self.kosullar = {}          # {"if1": True/False}
 
     # ------------------------------------------------------------ yardimcilar
     def _bekle(self, milisaniye):
@@ -318,58 +303,55 @@ class Oynatici(threading.Thread):
         return max(0.0, milisaniye * oran)
 
     # ------------------------------------------------------------ hedef cozumleme
-    def _hedef_konum(self, adim):
-        """Adimin uygulanacagi ekran noktasi; goruntu bulunamazsa None."""
-        if not goruntu_hedefli(adim):
-            return adim["x"], adim["y"]
-
-        yol = goruntu_yolu(adim.get("goruntu", ""))
-        tolerans = max(0, min(100, int(adim.get("esik", 0)))) / 100.0
-        bitis = time.perf_counter() + max(0, int(adim.get("zaman_asimi", 0))) / 1000.0
-
+    def _goruntuyu_ara(self, ad, esik, zaman_asimi):
+        """Sablonu ekranda arar. Bulunursa (sol, ust, genislik, yukseklik), yoksa None."""
+        yol = goruntu_yolu(ad)
+        tolerans = max(0, min(100, int(esik))) / 100.0
+        bitis = time.perf_counter() + max(0, int(zaman_asimi)) / 1000.0
         while True:
             try:
                 bulunan = ekran.sablonu_bul(yol, tolerans)
             except Exception as hata:
-                self.bildir("kayit", M("motor.goruntu_hata")
-                            % (adim.get("goruntu"), hata))
+                self.bildir("kayit", M("motor.goruntu_hata") % (ad, hata))
                 return None
             if bulunan:
-                sol, ust, genislik, yukseklik = bulunan
-                return (sol + genislik // 2 + int(adim.get("kaydir_x", 0)),
-                        ust + yukseklik // 2 + int(adim.get("kaydir_y", 0)))
+                return bulunan
             if time.perf_counter() >= bitis:
                 return None
             if not self._bekle(250):               # tekrar denemeden once nefes al
                 return None
 
+    def _hedef_konum(self, adim):
+        """Adimin uygulanacagi ekran noktasi; goruntu bulunamazsa None."""
+        if not goruntu_hedefli(adim):
+            return adim["x"], adim["y"]
+        bulunan = self._goruntuyu_ara(adim.get("goruntu", ""), adim.get("esik", 0),
+                                      adim.get("zaman_asimi", 0))
+        if not bulunan:
+            return None
+        sol, ust, genislik, yukseklik = bulunan
+        return (sol + genislik // 2 + int(adim.get("kaydir_x", 0)),
+                ust + yukseklik // 2 + int(adim.get("kaydir_y", 0)))
+
     # ------------------------------------------------------------ kosullar
-    def kosul_saglaniyor(self, adim):
-        """Adimin calisma kosulu tutuyor mu?"""
-        sart = adim.get("kosul_sart", HER_ZAMAN)
-        if not sart:
+    def kosul_saglaniyor(self, adim, sira=0):
+        """Adimin kosul goruntusu ekranda mi? Kosulsuz adimlar hep calisir."""
+        tur = adim.get("kosul_turu", KOSULSUZ)
+        if not tur:
             return True
-        olumsuz = sart.startswith("!")
-        return self.kosullar.get(sart.lstrip("!"), False) != olumsuz
+        ad = adim.get("kosul_goruntu", "")
+        bulundu = self._goruntuyu_ara(ad, adim.get("kosul_esik", 0),
+                                      adim.get("kosul_zaman_asimi", 0)) is not None
+        saglandi = bulundu if tur == "var" else not bulundu
+        anahtar = "motor.kosul_%s_%s" % (tur, "tamam" if saglandi else "atla")
+        self.bildir("kayit", M(anahtar) % (sira, ad))
+        return saglandi
 
     # ------------------------------------------------------------ tek adim
     def _adimi_uygula(self, adim):
         """Adimi uygular. Goruntu hedefi bulunamazsa False dondurur."""
         tip = adim["tip"]
         bilgi = ISLEMLER[tip]
-
-        if tip == "kosul":
-            # Bulunamamasi hata degil, gecerli bir sonuctur: kosul pasif olur.
-            ad = adim.get("kosul_adi", KOSUL_ADLARI[0])
-            aktif = self._hedef_konum(adim) is not None
-            if self.dur_olayi.is_set():
-                return True
-            self.kosullar[ad] = aktif
-            self.bildir("kayit", M("motor.kosul_sonuc")
-                        % (ad, M("motor.aktif") if aktif else M("motor.pasif"),
-                           adim.get("goruntu"),
-                           M("motor.bulundu") if aktif else M("motor.yok")))
-            return True
 
         if bilgi["konum"]:
             konum = self._hedef_konum(adim)
@@ -425,14 +407,10 @@ class Oynatici(threading.Thread):
                     break
 
                 self.bildir("tur", (tur, self.tur_sayisi))
-                self.kosullar.clear()       # her tur kosullar sifirdan olculur
                 for sira, adim in enumerate(self.adimlar, start=1):
                     if self.dur_olayi.is_set():
                         break
-                    if not self.kosul_saglaniyor(adim):
-                        self.bildir("kayit", M("motor.adim_atlandi")
-                                    % (sira, kosul_sart_etiketi(
-                                        adim.get("kosul_sart", HER_ZAMAN))))
+                    if not self.kosul_saglaniyor(adim, sira):
                         continue
                     for _tekrar in range(max(1, int(adim.get("tekrar", 1)))):
                         if self.dur_olayi.is_set():
