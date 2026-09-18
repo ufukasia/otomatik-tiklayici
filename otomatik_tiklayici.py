@@ -9,10 +9,12 @@ yapan; tuş kombinasyonu gönderen ve metin yazan masaüstü uygulaması.
 Harici kütüphane gerekmez (yalnızca Python standart kütüphanesi).
 """
 
+import ctypes
 import json
 import os
 import queue
 import sys
+import threading
 import time
 import tkinter as tk
 import tkinter.font as tkfont
@@ -67,35 +69,41 @@ class BolgeSecici(tk.Toplevel):
     Sonuclar: .sonuc = (sol, ust, genislik, yukseklik), .nokta = (x, y)
     """
 
-    def __init__(self, ana, bolge=None):
+    # Katman ekranda ve girdi almaya hazir. Otomatik kayit/testler sabit bir
+    # bekleme yerine bunu bekler; yoksa katman acilmadan tiklayabilirler.
+    acildi = threading.Event()
+
+    def __init__(self, ana, bolge=None, nokta_iste=True):
         super().__init__(ana)
         self.sonuc = bolge
         self.nokta = None
+        self.nokta_iste = nokta_iste      # False: yalnizca alan secilir (kosul)
         self._baslangic = None
         self._kare = None
         self._nisan = []
         self.asama = 2 if bolge else 1
 
         vsol, vust, vgen, vyuk = ekran.sanal_ekran()
-        self._kayma = (vsol, vust)
 
         self.overrideredirect(True)
         self.attributes("-topmost", True)
         self.attributes("-alpha", 0.30)
         self.configure(bg="black", cursor="crosshair")
-        try:
-            self.geometry("%dx%d%+d%+d" % (vgen, vyuk, vsol, vust))
-        except tk.TclError:
-            # Negatif konumlu sanal masaustu: birincil ekrana geri cekil
-            self._kayma = (0, 0)
-            self.geometry("%dx%d+0+0" % (self.winfo_screenwidth(), self.winfo_screenheight()))
+        # Tk'nin geometry ayristiricisi negatif konumu "sag kenardan su kadar"
+        # diye yorumluyor; birincil ekranin SOLUNDA monitor varsa katman kayiyor.
+        # Bu yuzden pencere Win32 ile yerlestirilir ve kayma, pencerenin GERCEK
+        # konumundan okunur - yerlestirme tutmasa bile koordinatlar tutarli kalir.
+        self.geometry("%dx%d+0+0" % (vgen, vyuk))
+        self.update_idletasks()
+        self._katmani_yerlestir(vsol, vust, vgen, vyuk)
+        self._kayma = (self.winfo_rootx(), self.winfo_rooty())
 
         self.tuval = tk.Canvas(self, bg="black", highlightthickness=0)
         self.tuval.pack(fill="both", expand=True)
 
         # Yonergeyi birincil ekranin ustune yerlestir (cok monitorde kaybolmasin)
-        yonerge_x = self.winfo_screenwidth() // 2 - vsol
-        yonerge_y = max(40, 60 - vust)
+        yonerge_x = self.winfo_screenwidth() // 2 - self._kayma[0]
+        yonerge_y = max(40, 60 - self._kayma[1])
         self._yonerge = self.tuval.create_text(
             yonerge_x, yonerge_y, fill="white", font=("Segoe UI", 19, "bold"), text="")
         self._alt_yonerge = self.tuval.create_text(
@@ -112,13 +120,28 @@ class BolgeSecici(tk.Toplevel):
 
         if self.asama == 2:
             self._asamayi_kur_nokta()
-        else:
+        elif nokta_iste:
             self._yonergeyi_yaz(M("secici.asama1"), M("secici.asama1_alt"))
+        else:
+            self._yonergeyi_yaz(M("secici.kosul"), M("secici.kosul_alt"))
 
         self.focus_force()
         self.grab_set()
+        self.update_idletasks()
+        BolgeSecici.acildi.set()
 
     # ------------------------------------------------------------ yardimcilar
+    def _katmani_yerlestir(self, sol, ust, genislik, yukseklik):
+        """Katmani sanal masaustunun tamamina, Win32 ile yerlestirir."""
+        SWP_NOZORDER, SWP_NOACTIVATE = 0x0004, 0x0010
+        try:
+            ctypes.windll.user32.SetWindowPos(
+                self.winfo_id(), 0, int(sol), int(ust), int(genislik), int(yukseklik),
+                SWP_NOZORDER | SWP_NOACTIVATE)
+        except Exception:
+            pass                      # yerlestirme tutmazsa kayma yine dogru okunur
+        self.update_idletasks()
+
     def _yonergeyi_yaz(self, ust, alt=""):
         self.tuval.itemconfigure(self._yonerge, text=ust)
         self.tuval.itemconfigure(self._alt_yonerge, text=alt)
@@ -187,6 +210,9 @@ class BolgeSecici(tk.Toplevel):
             return                      # kazara tiklama: 1. asamada kal
         kx, ky = self._kayma
         self.sonuc = (sol + kx, ust + ky, sag - sol, alt - ust)
+        if not self.nokta_iste:
+            self._kapat()            # kosul alani: tiklama noktasi sorulmaz
+            return
         self._asamayi_kur_nokta()
 
     def _hareket(self, olay):
@@ -206,6 +232,7 @@ class BolgeSecici(tk.Toplevel):
         self._kapat()
 
     def _kapat(self):
+        BolgeSecici.acildi.clear()
         self.grab_release()
         self.withdraw()
         self.update_idletasks()
@@ -255,9 +282,13 @@ class Uygulama(tk.Tk):
     # ------------------------------------------------------------------ durum
     def _degiskenler(self):
         self.d_islem = tk.StringVar(value=motor.islem_adi("sol_tik"))
-        self.d_kosul_adi = tk.StringVar(value=motor.KOSUL_ADLARI[0])
-        self.d_kosul_sart = tk.StringVar(
-            value=motor.kosul_sart_etiketi(motor.HER_ZAMAN))
+        self.d_kosul_turu = tk.StringVar(
+            value=motor.kosul_turu_etiketi(motor.KOSULSUZ))
+        self.d_kosul_goruntu = tk.StringVar()
+        self.d_kosul_esik = tk.StringVar(value="5")
+        self.d_kosul_zaman = tk.StringVar(value="0")
+        self.d_kosul_onizleme = tk.StringVar(value=M("kosul.onizleme_yok"))
+        self._kosul_onizleme_resmi = None
         self.d_hedef = tk.StringVar(value="konum")
         self.d_goruntu = tk.StringVar()
         self.d_esik = tk.StringVar(value="5")
@@ -380,18 +411,6 @@ class Uygulama(tk.Tk):
         self.islem_kutusu.bind("<<ComboboxSelected>>", lambda e: self._alanlari_guncelle())
         satir += 1
 
-        # Yalnizca "Koşul (IF)" isleminde gorunur: sonucun yazilacagi yuva
-        self.kosul_adi_cercevesi = ttk.Frame(kutu)
-        self.kosul_adi_cercevesi.grid(row=satir, column=0, columnspan=3, sticky="ew",
-                                      pady=(4, 0))
-        satir += 1
-        ttk.Label(self.kosul_adi_cercevesi, text=M("form.sonucu_yaz")).pack(side="left")
-        ttk.Combobox(self.kosul_adi_cercevesi, textvariable=self.d_kosul_adi,
-                     state="readonly", width=7,
-                     values=motor.KOSUL_ADLARI).pack(side="left", padx=(8, 0))
-        ttk.Label(self.kosul_adi_cercevesi, text=M("form.yuvasina"),
-                  foreground="#666666").pack(side="left", padx=(6, 0))
-
         ttk.Separator(kutu, orient="horizontal").grid(
             row=satir, column=0, columnspan=3, sticky="ew", pady=8)
         satir += 1
@@ -456,13 +475,28 @@ class Uygulama(tk.Tk):
         self.deger_girdi.grid(row=satir, column=1, columnspan=2, sticky="ew", pady=3)
         satir += 1
 
-        ttk.Label(kutu, text=M("form.kosul_sart")).grid(row=satir, column=0,
-                                                        sticky="w", pady=3)
-        self.kosul_sart_kutusu = ttk.Combobox(
-            kutu, textvariable=self.d_kosul_sart, state="readonly", width=19,
-            values=motor.kosul_sart_secenekleri())
-        self.kosul_sart_kutusu.grid(row=satir, column=1, columnspan=2, sticky="ew", pady=3)
+        ttk.Separator(kutu, orient="horizontal").grid(
+            row=satir, column=0, columnspan=3, sticky="ew", pady=8)
         satir += 1
+
+        # --- kosul (istege bagli) -----------------------------------------
+        kosul_kutu = ttk.LabelFrame(kutu, text=M("form.kosul_baslik"), padding=6)
+        kosul_kutu.grid(row=satir, column=0, columnspan=3, sticky="ew", pady=(0, 4))
+        kosul_kutu.columnconfigure(1, weight=1)
+        satir += 1
+
+        self.kosul_turu_kutusu = ttk.Combobox(
+            kosul_kutu, textvariable=self.d_kosul_turu, state="readonly", width=30,
+            values=motor.kosul_turu_secenekleri())
+        self.kosul_turu_kutusu.grid(row=0, column=0, columnspan=2, sticky="ew")
+        self.kosul_turu_kutusu.bind("<<ComboboxSelected>>",
+                                    lambda e: self._alanlari_guncelle())
+
+        self.kosul_cercevesi = ttk.Frame(kosul_kutu)
+        self.kosul_cercevesi.grid(row=1, column=0, columnspan=2, sticky="ew",
+                                  pady=(6, 0))
+        self.kosul_cercevesi.columnconfigure(1, weight=1)
+        self._kosul_alanlarini_kur(self.kosul_cercevesi)
 
         ttk.Label(kutu, text=M("form.tekrar")).grid(row=satir, column=0, sticky="w", pady=3)
         ttk.Spinbox(kutu, from_=1, to=100000, textvariable=self.d_tekrar, width=10).grid(
@@ -491,6 +525,37 @@ class Uygulama(tk.Tk):
         self.guncelle_dugmesi.grid(row=0, column=1, sticky="ew", padx=(3, 0))
 
         self._alanlari_guncelle()
+
+    def _kosul_alanlarini_kur(self, ebeveyn):
+        """Koşul görüntüsü alanları — yalnızca bir koşul seçilince görünür."""
+        ttk.Button(ebeveyn, text=M("form.kosul_goruntu_sec"),
+                   command=self.kosul_goruntusu_sec).grid(
+            row=0, column=0, columnspan=2, sticky="ew", pady=(0, 4))
+
+        onizleme_kutu = ttk.Frame(ebeveyn, relief="sunken", borderwidth=1, padding=3)
+        onizleme_kutu.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 5))
+        self.kosul_onizleme_tuvali = tk.Canvas(
+            onizleme_kutu, width=self.ONIZLEME_GENISLIK,
+            height=int(self.ONIZLEME_YUKSEKLIK * 0.62),
+            highlightthickness=0, bg="#f5f5f5")
+        self.kosul_onizleme_tuvali.pack()
+        ttk.Label(onizleme_kutu, textvariable=self.d_kosul_onizleme, anchor="center",
+                  foreground="#555555", font=("Segoe UI", 8)).pack(fill="x")
+
+        ttk.Label(ebeveyn, text=M("form.kosul_tolerans")).grid(row=2, column=0,
+                                                              sticky="w", pady=2)
+        ttk.Spinbox(ebeveyn, from_=0, to=100, textvariable=self.d_kosul_esik,
+                    width=8).grid(row=2, column=1, sticky="w", pady=2)
+
+        ttk.Label(ebeveyn, text=M("form.kosul_zaman")).grid(row=3, column=0,
+                                                           sticky="w", pady=2)
+        ttk.Spinbox(ebeveyn, from_=0, to=600000, increment=500,
+                    textvariable=self.d_kosul_zaman, width=8).grid(
+            row=3, column=1, sticky="w", pady=2)
+
+        ttk.Button(ebeveyn, text=M("form.kosul_dene"),
+                   command=self.kosulu_dene).grid(
+            row=4, column=0, columnspan=2, sticky="ew", pady=(5, 0))
 
     def _goruntu_alanlarini_kur(self, ebeveyn):
         ttk.Button(ebeveyn, text=M("form.bolge_sec"),
@@ -734,14 +799,12 @@ class Uygulama(tk.Tk):
         tip = motor.tip_bul(self.d_islem.get())
         bilgi = motor.ISLEMLER[tip]
 
-        # "Koşul (IF)" sonucu bir yuvaya yazar; bulunamamasi hata degildir
-        kosul_islemi = tip == "kosul"
-        if kosul_islemi:
-            self.kosul_adi_cercevesi.grid()
+        # Koşul isteğe bağlı: seçilmediyse alanları hiç gösterme
+        if motor.kosul_turu_kodu(self.d_kosul_turu.get()):
+            self.kosul_cercevesi.grid()
+            self._kosul_onizleme_yenile()
         else:
-            self.kosul_adi_cercevesi.grid_remove()
-        self.bulunamazsa_kutusu.configure(state="disabled" if kosul_islemi else "readonly")
-        self.bulunamazsa_etiketi.configure(foreground="#aaaaaa" if kosul_islemi else "black")
+            self.kosul_cercevesi.grid_remove()
 
         # Yalnizca goruntuyle calisan islemler koordinat secenegini kapatir
         if bilgi.get("goruntu_sart"):
@@ -780,15 +843,17 @@ class Uygulama(tk.Tk):
         if bilgi.get("goruntu_sart"):
             hedef = "goruntu"
         davranis = motor.bulunamazsa_kodu(self.d_bulunamazsa.get())
-        sart = motor.kosul_sart_kodu(self.d_kosul_sart.get())
+        kosul_turu = motor.kosul_turu_kodu(self.d_kosul_turu.get())
         return {
             "tip": tip,
             "hedef": hedef,
             "x": self._sayi(self.d_x, 0),
             "y": self._sayi(self.d_y, 0),
             "goruntu": self.d_goruntu.get().strip(),
-            "kosul_adi": self.d_kosul_adi.get(),
-            "kosul_sart": sart,
+            "kosul_turu": kosul_turu,
+            "kosul_goruntu": self.d_kosul_goruntu.get().strip(),
+            "kosul_esik": self._sayi(self.d_kosul_esik, 5, en_az=0),
+            "kosul_zaman_asimi": self._sayi(self.d_kosul_zaman, 0, en_az=0),
             "esik": self._sayi(self.d_esik, 5, en_az=0),
             "zaman_asimi": self._sayi(self.d_zaman_asimi, 0, en_az=0),
             "kaydir_x": self._sayi(self.d_kaydir_x, 0),
@@ -803,9 +868,11 @@ class Uygulama(tk.Tk):
 
     def _forma_adim(self, adim):
         self.d_islem.set(motor.islem_adi(adim["tip"]))
-        self.d_kosul_adi.set(adim.get("kosul_adi", motor.KOSUL_ADLARI[0]))
-        self.d_kosul_sart.set(motor.kosul_sart_etiketi(
-            adim.get("kosul_sart", motor.HER_ZAMAN)))
+        self.d_kosul_turu.set(motor.kosul_turu_etiketi(
+            adim.get("kosul_turu", motor.KOSULSUZ)))
+        self.d_kosul_goruntu.set(adim.get("kosul_goruntu", ""))
+        self.d_kosul_esik.set(str(adim.get("kosul_esik", 5)))
+        self.d_kosul_zaman.set(str(adim.get("kosul_zaman_asimi", 0)))
         self.d_hedef.set(adim.get("hedef", "konum"))
         self.d_goruntu.set(adim.get("goruntu", ""))
         self.d_esik.set(str(adim.get("esik", 5)))
@@ -965,6 +1032,129 @@ class Uygulama(tk.Tk):
             gecici.start()
         except Exception as hata:
             self.kaydet_gunluk(M("kayit.deneme_hata") % hata)
+
+    # ------------------------------------------------------------ koşul görüntüsü
+    def _alani_yakala(self, nokta_iste, mevcut_bolge=None):
+        """Ekranı karartıp bir alan seçtirir ve o alanı PNG olarak kaydeder.
+
+        Dönüş: (dosya_adi, bolge, nokta) — iptal edilirse (None, None, None).
+        """
+        gorunurdu = self.state() == "normal"
+        self.withdraw()
+        self.update()
+        time.sleep(0.25)
+
+        bolge = nokta = goruntu = hata = None
+        try:
+            secici = BolgeSecici(self, bolge=mevcut_bolge, nokta_iste=nokta_iste)
+            self.wait_window(secici)
+            bolge, nokta = secici.sonuc, secici.nokta
+            if bolge and (nokta or not nokta_iste):
+                # Yakalama ana pencere geri gelmeden yapilmali
+                self.update()
+                time.sleep(0.25)
+                goruntu = ekran.yakala(*bolge)
+        except Exception as istisna:
+            hata = istisna
+        finally:
+            if gorunurdu:
+                self.deiconify()
+                self.lift()
+
+        if hata is not None:
+            messagebox.showerror(M("kutu.alinamadi"), str(hata), parent=self)
+            return None, None, None
+        if not (bolge and goruntu):
+            return None, None, None
+
+        bayt, g, y, _s, _u = goruntu
+        try:
+            motor.goruntu_klasorunu_hazirla()
+            damga = datetime.now().strftime("%y%m%d_%H%M%S")
+            ad, sayac = "sablon_%s.png" % damga, 2
+            while os.path.isfile(motor.goruntu_yolu(ad)):
+                ad = "sablon_%s_%d.png" % (damga, sayac)
+                sayac += 1
+            ekran.png_kaydet(motor.goruntu_yolu(ad), bayt, g, y)
+        except Exception as istisna:
+            messagebox.showerror(M("kutu.kaydedilemedi"), str(istisna), parent=self)
+            return None, None, None
+        return ad, bolge, nokta
+
+    def kosul_goruntusu_sec(self):
+        """Koşul alanını seçtirir — tıklama noktası sorulmaz, sadece aranır."""
+        if self.oynatici and self.oynatici.is_alive():
+            return
+        ad, bolge, _nokta = self._alani_yakala(nokta_iste=False)
+        if not ad:
+            self.kaydet_gunluk(M("kayit.bolge_iptal"))
+            return
+        self.d_kosul_goruntu.set(ad)
+        self._kosul_onizleme_yenile()
+        self.kaydet_gunluk(M("kayit.kosul_alindi")
+                           % (ad, bolge[2], bolge[3], bolge[0], bolge[1]))
+
+    def _kosul_onizleme_yenile(self):
+        ad = self.d_kosul_goruntu.get().strip()
+        tuval = self.kosul_onizleme_tuvali
+        tuval.delete("all")
+        genislik = int(tuval["width"])
+        yukseklik = int(tuval["height"])
+        if not ad or not os.path.isfile(motor.goruntu_yolu(ad)):
+            self._kosul_onizleme_resmi = None
+            tuval.create_text(genislik // 2, yukseklik // 2, width=genislik - 16,
+                              text=M("onizleme.dosya_yok") % ad if ad
+                              else M("kosul.onizleme_yok"),
+                              fill="#999999", font=("Segoe UI", 9))
+            self.d_kosul_onizleme.set("")
+            return
+        try:
+            resim = tk.PhotoImage(file=motor.goruntu_yolu(ad))
+            asil_g, asil_y = resim.width(), resim.height()
+            bolen = max(1, -(-asil_g // (genislik - 12)), -(-asil_y // (yukseklik - 12)))
+            if bolen > 1:
+                resim = resim.subsample(bolen, bolen)
+        except Exception as hata:
+            self._kosul_onizleme_resmi = None
+            tuval.create_text(genislik // 2, yukseklik // 2, width=genislik - 16,
+                              text=M("onizleme.hata") % hata, fill="#999999",
+                              font=("Segoe UI", 9))
+            self.d_kosul_onizleme.set("")
+            return
+        self._kosul_onizleme_resmi = resim
+        x0 = (genislik - resim.width()) // 2
+        y0 = (yukseklik - resim.height()) // 2
+        tuval.create_image(x0, y0, anchor="nw", image=resim)
+        tuval.create_rectangle(x0, y0, x0 + resim.width(), y0 + resim.height(),
+                               outline="#2563eb", width=2)
+        self.d_kosul_onizleme.set(M("kosul.onizleme") % (ad, asil_g, asil_y))
+
+    def kosulu_dene(self):
+        """Koşulun şu anda sağlanıp sağlanmadığını gösterir."""
+        ad = self.d_kosul_goruntu.get().strip()
+        if not ad:
+            messagebox.showinfo(M("kutu.kosul_yok_baslik"), M("kutu.kosul_yok"),
+                                parent=self)
+            return
+        tolerans = self._sayi(self.d_kosul_esik, 5, en_az=0) / 100.0
+        try:
+            baslangic = time.perf_counter()
+            bulunan = ekran.sablonu_bul(motor.goruntu_yolu(ad), tolerans)
+            sure = (time.perf_counter() - baslangic) * 1000
+        except Exception as hata:
+            messagebox.showerror(M("kutu.arama_hata"), str(hata), parent=self)
+            return
+        if bulunan:
+            self.kaydet_gunluk(M("kayit.arama_var")
+                               % (ad, bulunan[0], bulunan[1], bulunan[2], bulunan[3],
+                                  bulunan[0] + bulunan[2] // 2,
+                                  bulunan[1] + bulunan[3] // 2, sure))
+            messagebox.showinfo(M("kutu.kosul_var_baslik"), M("kutu.kosul_var") % ad,
+                                parent=self)
+        else:
+            self.kaydet_gunluk(M("kayit.arama_yok") % (ad, sure))
+            messagebox.showwarning(M("kutu.kosul_yok_simdi_baslik"),
+                                   M("kutu.kosul_yok_simdi") % ad, parent=self)
 
     # ------------------------------------------------------------ görüntü hedefi
     def bolge_sec(self):
@@ -1223,13 +1413,6 @@ class Uygulama(tk.Tk):
                                        parent=self)
                 return
 
-        belirlenen, kullanilan = motor.kosullari_toplar(aktifler)
-        eksik = sorted(kullanilan - belirlenen)
-        if eksik and not messagebox.askyesno(
-                M("kutu.tanimsiz_baslik"), M("kutu.tanimsiz") % ", ".join(eksik),
-                parent=self):
-            return
-
         hazirlik = self._sayi(self.d_hazirlik, 3, en_az=0)
         self._calisma_kilidi(True)
         if hazirlik > 0:
@@ -1384,9 +1567,13 @@ class Uygulama(tk.Tk):
             with open(yol, "r", encoding="utf-8") as dosya:
                 veri = json.load(dosya)
             adimlar = veri.get("adimlar", veri if isinstance(veri, list) else [])
-            temiz = []
+            temiz, eski_kosul = [], 0
             for ham in adimlar:
                 tip = ham.get("tip")
+                if tip == "kosul":
+                    # Eski surumun ayri "Koşul (IF)" adimi kaldirildi
+                    eski_kosul += 1
+                    continue
                 if tip not in motor.ISLEMLER:
                     raise ValueError(M("hata.bilinmeyen_islem") % tip)
                 adim = motor.bos_adim(tip)      # varsayilanlar adimin kendi turune gore
@@ -1402,6 +1589,8 @@ class Uygulama(tk.Tk):
             self._baslik_guncelle()
             self.kaydet_gunluk(M("kayit.acildi")
                                % (os.path.basename(yol), len(temiz)))
+            if eski_kosul:
+                self.kaydet_gunluk(M("kayit.eski_kosul") % eski_kosul)
         except Exception as hata:
             messagebox.showerror(M("kutu.acilamadi"),
                                  M("kutu.acilamadi_mesaj") % hata, parent=self)

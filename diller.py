@@ -62,7 +62,6 @@ METINLER = {
         "islem.birak": "Sol Tuşu Bırak",
         "islem.tekerlek": "Tekerlek Kaydır",
         "islem.goruntu_bekle": "Görüntüyü Bekle",
-        "islem.kosul": "Koşul (IF)",
         "islem.tus": "Tuşa Bas",
         "islem.metin": "Metin Yaz",
         "islem.bekle": "Bekle",
@@ -76,8 +75,11 @@ METINLER = {
         # --- form ---
         "form.baslik": " Adım Ekle / Düzenle ",
         "form.islem": "İşlem",
-        "form.sonucu_yaz": "Sonucu yaz",
-        "form.yuvasina": "yuvasına",
+        "form.kosul_baslik": " Koşul — isteğe bağlı ",
+        "form.kosul_goruntu_sec": "🔍 Koşul Görüntüsü Seç",
+        "form.kosul_dene": "Koşulu Şimdi Dene",
+        "form.kosul_tolerans": "Koşul toleransı (%)",
+        "form.kosul_zaman": "Koşul araması (ms)",
         "form.hedef": "Hedef",
         "form.koordinat": "Koordinat",
         "form.goruntu": "Görüntü",
@@ -93,7 +95,6 @@ METINLER = {
         "form.kaydirma": "Tıklama kayması",
         "form.bulunamazsa": "Bulunamazsa",
         "form.simdi_ara": "🔍 Şimdi Ekranda Ara",
-        "form.kosul_sart": "Çalışma koşulu",
         "form.tekrar": "Tekrar",
         "form.bekleme": "Sonra bekle (ms)",
         "form.not": "Not",
@@ -121,7 +122,7 @@ METINLER = {
         "liste.bekleme": "Bekleme (ms)",
         "liste.not": "Not",
         "liste.ornek_islem": "Sol Tuşu Basılı Tut",
-        "liste.ornek_kosul": "→ if1 belirle",
+        "liste.ornek_kosul": "🔍 sablon_260101_120000.png yoksa",
         "liste.ornek_deger": "ctrl+shift+s",
         "liste.yukari": "▲ Yukarı",
         "liste.asagi": "▼ Aşağı",
@@ -171,6 +172,10 @@ METINLER = {
         "secici.asama2": "2/2  ·  Şimdi TIKLANACAK noktayı seçin",
         "secici.asama2_alt": "Nokta bölgenin dışında da olabilir"
                             "   ·   Enter = bölgenin ortası   ·   ESC = vazgeç",
+        "secici.kosul": "Ekranda ARANACAK koşul alanını fareyle çizin",
+        "secici.kosul_alt": "Bu alan ekranda görünüyorsa adım çalışır"
+                           "   ·   burada tıklama noktası sorulmaz"
+                           "   ·   ESC = vazgeç",
         "secici.olcu": "%d x %d piksel",
         "secici.bolge": "aranacak bölge: %d x %d piksel",
 
@@ -188,6 +193,8 @@ METINLER = {
         "kayit.deneme_hata": "Deneme başarısız: %s",
         "kayit.konum": "Konum yakalandı: (%d, %d)",
         "kayit.bolge_iptal": "Bölge seçimi iptal edildi.",
+        "kayit.kosul_alindi": "Koşul görüntüsü yakalandı: %s (%dx%d px, bölge %d,%d)",
+        "kayit.eski_kosul": "Eski sürümün %d koşul adımı kaldırıldı; koşullar artık her adımın kendi içinde.",
         "kayit.nokta_iptal": "Tıklama noktası seçimi iptal edildi.",
         "kayit.goruntu_alindi": "Görüntü yakalandı: %s (%dx%d px, bölge %d,%d) · "
                                "tıklama noktası %d,%d (ortadan %+d, %+d)",
@@ -213,27 +220,31 @@ METINLER = {
         "motor.goruntu_hata": "Görüntü aranamadı (%s): %s",
         "motor.hata": "HATA (adım %d): %s",
         "motor.bulunamadi": "Adım %d: '%s' görüntüsü ekranda bulunamadı - %s.",
-        "motor.kosul_sonuc": "Koşul %s = %s  ('%s' ekranda %s)",
-        "motor.aktif": "AKTİF",
-        "motor.pasif": "pasif",
-        "motor.bulundu": "bulundu",
-        "motor.yok": "yok",
-        "motor.adim_atlandi": "Adım %d atlandı (%s değil).",
+        "motor.kosul_var_tamam": "Adım %d: koşul sağlandı — '%s' ekranda bulundu.",
+        "motor.kosul_var_atla": "Adım %d atlandı — '%s' ekranda bulunamadı.",
+        "motor.kosul_yok_tamam": "Adım %d: koşul sağlandı — '%s' ekranda yok.",
+        "motor.kosul_yok_atla": "Adım %d atlandı — '%s' ekranda duruyor.",
 
         # --- bulunamazsa / kosul ---
         "bulunamazsa.durdur": "Çalışmayı durdur",
         "bulunamazsa.atla": "Adımı atla",
-        "kosul.her_zaman": "Her zaman çalış",
-        "kosul.aktifse": "%s aktifse",
-        "kosul.pasifse": "%s pasifse",
-        "kosul.belirle": "→ %s belirle",
+        "kosul.tur_": "Koşulsuz çalış",
+        "kosul.tur_var": "Şu görüntü ekranda VARSA çalış",
+        "kosul.tur_yok": "Şu görüntü ekranda YOKSA çalış",
+        "kosul.liste_var": "🔍 %s varsa",
+        "kosul.liste_yok": "🔍 %s yoksa",
+        "kosul.onizleme_yok": "Koşul görüntüsü seçilmedi",
+        "kosul.onizleme": "%s · %d x %d px",
 
         # --- dogrulama ---
         "hata.bilinmeyen_islem": "Bilinmeyen işlem türü: %s",
         "hata.tekrar": "Tekrar sayısı en az 1 olmalı.",
         "hata.bekleme": "Bekleme süresi negatif olamaz.",
-        "hata.kosul_sart": "Geçersiz çalışma koşulu: %s",
-        "hata.kosul_adi": "Koşul adı %s arasından seçilmeli.",
+        "hata.kosul_turu": "Geçersiz koşul türü: %s",
+        "hata.kosul_goruntu_yok": "Koşul seçtiniz ama koşul görüntüsü yok. "
+                                 "'Koşul Görüntüsü Seç' ile ekranda aranacak "
+                                 "alanı yakalayın.",
+        "hata.kosul_goruntu_dosya": "Koşul görüntüsü bulunamadı: %s",
         "hata.yalniz_goruntu": "'%s' işlemi yalnızca görüntü hedefiyle kullanılabilir.",
         "hata.goruntu_yok": "Görüntü seçilmemiş. 'Bölge + Tıklama Noktası Seç' ile "
                            "bir alan yakalayın.",
@@ -264,10 +275,16 @@ METINLER = {
         "kutu.bolge_yok_baslik": "Bölge ekranda yok",
         "kutu.bolge_yok": "Tıklama noktasını seçebilmek için bölgenin şu anda ekranda "
                          "görünmesi gerekir.\n\nHedef pencereyi açıp tekrar deneyin.",
-        "kutu.tanimsiz_baslik": "Tanımsız koşul",
-        "kutu.tanimsiz": "Şu koşulları belirleyen bir 'Koşul (IF)' adımı yok: %s\n\n"
-                        "Bu koşullar pasif sayılacağı için onlara bağlı adımlar hiç "
-                        "çalışmayacak.\n\nYine de başlatılsın mı?",
+        "kutu.kosul_yok_baslik": "Koşul görüntüsü yok",
+        "kutu.kosul_yok": "Önce 'Koşul Görüntüsü Seç' ile ekranda aranacak alanı "
+                         "yakalayın.",
+        "kutu.kosul_var_baslik": "Koşul sağlanıyor",
+        "kutu.kosul_var": "'%s' şu anda ekranda görünüyor.\n\n"
+                         "Bu koşulla adım çalışır.",
+        "kutu.kosul_yok_simdi_baslik": "Koşul sağlanmıyor",
+        "kutu.kosul_yok_simdi": "'%s' şu anda ekranda bulunamadı.\n\n"
+                               "Hedef pencere açık mı? Tolerans değerini "
+                               "artırmayı deneyin.",
         "kutu.yeni_baslik": "Yeni liste",
         "kutu.yeni": "Kaydedilmemiş değişiklikler var. Devam edilsin mi?",
         "kutu.acilamadi": "Açılamadı",
@@ -304,13 +321,15 @@ METINLER = {
             "  Program çalışırken o alanı ekranda arar ve işaretlediğiniz\n"
             "  noktaya tıklar; pencere yer değiştirse de doğru yeri bulur.\n"
             "  Önizlemede kırmızı nişan tıklanacak yeri gösterir.\n\n"
-            "KOŞUL (IF) — ekranda şu varsa şunu yap\n"
-            "  1. İşlem = 'Koşul (IF)' seçin, sonucu yazacağı yuvayı belirtin\n"
-            "     (if1 … if6) ve aranacak görüntüyü yakalayın.\n"
-            "  2. Çalıştığında o görüntü ekranda varsa yuva AKTİF, yoksa pasif olur.\n"
-            "  3. Sonraki adımlarda 'Çalışma koşulu' kutusundan\n"
-            "     'if1 aktifse' ya da 'if1 pasifse' seçin.\n"
-            "  Koşullar her turun başında sıfırlanıp yeniden ölçülür.\n\n"
+            "KOŞUL — ekranda şu yazı/görüntü varsa bu adımı yap\n"
+            "  İsteğe bağlıdır; hiç dokunmazsanız adım her zaman çalışır.\n"
+            "  1. Formdaki 'Koşul' kutusundan 'Şu görüntü ekranda VARSA çalış'\n"
+            "     (ya da YOKSA) seçin.\n"
+            "  2. 'Koşul Görüntüsü Seç' ile o yazının çevresine bir kare çizin.\n"
+            "     Burada tıklama noktası sorulmaz - bu alan yalnızca aranır.\n"
+            "  3. Adımın kendi hedefi (tıklayacağı yer) ayrıdır ve değişmez.\n"
+            "  Koşul tutmazsa adım o turda atlanır, günlüğe yazılır.\n"
+            "  'Koşulu Şimdi Dene' ile koşulun şu an sağlanıp sağlanmadığını görün.\n\n"
             "TUŞ YAZIMI (Tuşa Bas işlemi)\n"
             "  enter, tab, esc, space, f5, up, down, delete\n"
             "  ctrl+c, ctrl+shift+s, alt+f4, win+d\n\n"
@@ -350,7 +369,6 @@ METINLER = {
         "islem.birak": "Release Left Button",
         "islem.tekerlek": "Scroll Wheel",
         "islem.goruntu_bekle": "Wait For Image",
-        "islem.kosul": "Condition (IF)",
         "islem.tus": "Press Key",
         "islem.metin": "Type Text",
         "islem.bekle": "Wait",
@@ -362,8 +380,11 @@ METINLER = {
 
         "form.baslik": " Add / Edit Step ",
         "form.islem": "Action",
-        "form.sonucu_yaz": "Write result to",
-        "form.yuvasina": "slot",
+        "form.kosul_baslik": " Condition — optional ",
+        "form.kosul_goruntu_sec": "🔍 Pick Condition Image",
+        "form.kosul_dene": "Test Condition Now",
+        "form.kosul_tolerans": "Condition tolerance (%)",
+        "form.kosul_zaman": "Condition search (ms)",
         "form.hedef": "Target",
         "form.koordinat": "Coordinate",
         "form.goruntu": "Image",
@@ -379,7 +400,6 @@ METINLER = {
         "form.kaydirma": "Click offset",
         "form.bulunamazsa": "If not found",
         "form.simdi_ara": "🔍 Search Screen Now",
-        "form.kosul_sart": "Run condition",
         "form.tekrar": "Repeat",
         "form.bekleme": "Delay after (ms)",
         "form.not": "Note",
@@ -405,7 +425,7 @@ METINLER = {
         "liste.bekleme": "Delay (ms)",
         "liste.not": "Note",
         "liste.ornek_islem": "Release Left Button",
-        "liste.ornek_kosul": "→ set if1",
+        "liste.ornek_kosul": "🔍 if no sablon_260101_120000.png",
         "liste.ornek_deger": "ctrl+shift+s",
         "liste.yukari": "▲ Up",
         "liste.asagi": "▼ Down",
@@ -452,6 +472,10 @@ METINLER = {
         "secici.asama2": "2/2  ·  Now pick the point to CLICK",
         "secici.asama2_alt": "The point may be outside the region"
                             "   ·   Enter = center of region   ·   ESC = cancel",
+        "secici.kosul": "Drag the CONDITION area to look for on screen",
+        "secici.kosul_alt": "The step runs when this area is on screen"
+                           "   ·   no click point is asked here"
+                           "   ·   ESC = cancel",
         "secici.olcu": "%d x %d pixels",
         "secici.bolge": "search area: %d x %d pixels",
 
@@ -468,6 +492,8 @@ METINLER = {
         "kayit.deneme_hata": "Test failed: %s",
         "kayit.konum": "Position captured: (%d, %d)",
         "kayit.bolge_iptal": "Region selection cancelled.",
+        "kayit.kosul_alindi": "Condition image captured: %s (%dx%d px, region %d,%d)",
+        "kayit.eski_kosul": "%d condition step(s) from the old version were dropped; conditions now live inside each step.",
         "kayit.nokta_iptal": "Click point selection cancelled.",
         "kayit.goruntu_alindi": "Image captured: %s (%dx%d px, region %d,%d) · "
                                "click point %d,%d (%+d, %+d from center)",
@@ -492,25 +518,29 @@ METINLER = {
         "motor.goruntu_hata": "Image search failed (%s): %s",
         "motor.hata": "ERROR (step %d): %s",
         "motor.bulunamadi": "Step %d: image '%s' not found on screen - %s.",
-        "motor.kosul_sonuc": "Condition %s = %s  ('%s' %s on screen)",
-        "motor.aktif": "ACTIVE",
-        "motor.pasif": "inactive",
-        "motor.bulundu": "found",
-        "motor.yok": "not found",
-        "motor.adim_atlandi": "Step %d skipped (not %s).",
+        "motor.kosul_var_tamam": "Step %d: condition met — '%s' found on screen.",
+        "motor.kosul_var_atla": "Step %d skipped — '%s' not found on screen.",
+        "motor.kosul_yok_tamam": "Step %d: condition met — '%s' is not on screen.",
+        "motor.kosul_yok_atla": "Step %d skipped — '%s' is still on screen.",
 
         "bulunamazsa.durdur": "Stop the run",
         "bulunamazsa.atla": "Skip the step",
-        "kosul.her_zaman": "Always run",
-        "kosul.aktifse": "if %s is active",
-        "kosul.pasifse": "if %s is inactive",
-        "kosul.belirle": "→ set %s",
+        "kosul.tur_": "Always run",
+        "kosul.tur_var": "Run if this image IS on screen",
+        "kosul.tur_yok": "Run if this image is NOT on screen",
+        "kosul.liste_var": "🔍 if %s",
+        "kosul.liste_yok": "🔍 if no %s",
+        "kosul.onizleme_yok": "No condition image selected",
+        "kosul.onizleme": "%s · %d x %d px",
 
         "hata.bilinmeyen_islem": "Unknown action type: %s",
         "hata.tekrar": "Repeat count must be at least 1.",
         "hata.bekleme": "Delay cannot be negative.",
-        "hata.kosul_sart": "Invalid run condition: %s",
-        "hata.kosul_adi": "Condition slot must be one of %s.",
+        "hata.kosul_turu": "Invalid condition type: %s",
+        "hata.kosul_goruntu_yok": "You picked a condition but no condition image. "
+                                 "Use 'Pick Condition Image' to capture the area "
+                                 "to look for.",
+        "hata.kosul_goruntu_dosya": "Condition image not found: %s",
         "hata.yalniz_goruntu": "'%s' can only be used with an image target.",
         "hata.goruntu_yok": "No image selected. Capture an area with "
                            "'Select Region + Click Point'.",
@@ -540,10 +570,16 @@ METINLER = {
         "kutu.bolge_yok_baslik": "Region not on screen",
         "kutu.bolge_yok": "The region must be visible on screen to pick a click "
                          "point.\n\nOpen the target window and try again.",
-        "kutu.tanimsiz_baslik": "Undefined condition",
-        "kutu.tanimsiz": "No 'Condition (IF)' step sets these conditions: %s\n\n"
-                        "They will count as inactive, so steps bound to them will "
-                        "never run.\n\nStart anyway?",
+        "kutu.kosul_yok_baslik": "No condition image",
+        "kutu.kosul_yok": "Use 'Pick Condition Image' first to capture the area to "
+                         "look for.",
+        "kutu.kosul_var_baslik": "Condition is met",
+        "kutu.kosul_var": "'%s' is on screen right now.\n\n"
+                         "With this condition the step would run.",
+        "kutu.kosul_yok_simdi_baslik": "Condition is not met",
+        "kutu.kosul_yok_simdi": "'%s' is not on screen right now.\n\n"
+                               "Is the target window open? Try increasing the "
+                               "tolerance.",
         "kutu.yeni_baslik": "New list",
         "kutu.yeni": "There are unsaved changes. Continue?",
         "kutu.acilamadi": "Could not open",
@@ -579,14 +615,16 @@ METINLER = {
             "  While running, the program looks for that area on screen and\n"
             "  clicks the point you marked - even if the window has moved.\n"
             "  The red crosshair in the preview shows where it will click.\n\n"
-            "CONDITION (IF) — do this if that is on screen\n"
-            "  1. Pick Action = 'Condition (IF)', choose the slot to write to\n"
-            "     (if1 … if6) and capture the image to look for.\n"
-            "  2. When it runs, the slot becomes ACTIVE if the image is on\n"
-            "     screen, inactive otherwise.\n"
-            "  3. In later steps use the 'Run condition' box to pick\n"
-            "     'if if1 is active' or 'if if1 is inactive'.\n"
-            "  Conditions are reset and re-measured at the start of every loop.\n\n"
+            "CONDITION — run this step only if something is on screen\n"
+            "  Optional; leave it alone and the step always runs.\n"
+            "  1. In the 'Condition' box pick 'Run if this image IS on screen'\n"
+            "     (or is NOT).\n"
+            "  2. Press 'Pick Condition Image' and drag a box around that text.\n"
+            "     No click point is asked for - this area is only searched.\n"
+            "  3. The step's own target (what it clicks) stays separate.\n"
+            "  If the condition does not hold, the step is skipped for that loop\n"
+            "  and it is written to the log.\n"
+            "  'Test Condition Now' shows whether the condition holds right now.\n\n"
             "KEY SYNTAX (Press Key action)\n"
             "  enter, tab, esc, space, f5, up, down, delete\n"
             "  ctrl+c, ctrl+shift+s, alt+f4, win+d\n\n"

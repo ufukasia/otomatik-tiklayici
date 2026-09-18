@@ -118,43 +118,43 @@ noktayı seçmenizi ister — kareyi yeniden çizmeniz gerekmez.
 | **Tıklama kayması** | Karenin ortasına göre kaç piksel sapılacağı. Nokta seçimiyle kendiliğinden dolar; istersen elle de yazabilirsin. |
 | **Bulunamazsa** | `Çalışmayı durdur` veya `Adımı atla`. Bazen çıkan bir uyarı penceresini kapatmak için `Adımı atla` uygundur. |
 
-## Koşul (IF) — "ekranda şu varsa şunu yap"
+## Koşul — "ekranda şu yazı varsa bu adımı yap"
 
-Bir görüntünün ekranda olup olmadığına bakıp, sonraki adımları buna göre
-çalıştırabilir ya da atlayabilirsiniz. Altı koşul yuvası vardır: `if1` … `if6`.
+Her adıma **isteğe bağlı** bir koşul verebilirsiniz. Hiç dokunmazsanız adım her
+zaman çalışır; ayrı bir koşul adımı eklemeniz veya yuva takip etmeniz gerekmez.
 
-**1. Koşulu ölçen adım.** İşlem olarak **Koşul (IF)** seçin:
-
-- **Sonucu yaz → `if1` yuvasına** — sonucun hangi yuvaya yazılacağı.
-- Aranacak görüntüyü her zamanki gibi **Bölge + Tıklama Noktası Seç** ile
-  yakalayın (tıklama noktası bu işlemde kullanılmaz, sadece aranır).
-- Çalıştığında görüntü ekranda varsa `if1` **aktif**, yoksa **pasif** olur.
-  Bulunamaması hata değildir; çalışma durmaz, günlüğe `Koşul if1 = pasif` düşer.
-- **En fazla arama (ms)** bu işlemde `0` gelir (anlık bakar). Görüntünün
-  belirmesine biraz süre tanımak isterseniz artırın.
-
-**2. Koşula bağlı adımlar.** Her adımın formunda **Çalışma koşulu** kutusu var:
+Formdaki **Koşul — isteğe bağlı** kutusundan seçim yapın:
 
 | Seçenek | Anlamı |
 |---|---|
-| `Her zaman çalış` | varsayılan |
-| `if1 aktifse` | yalnızca görüntü bulunduysa çalışır |
-| `if1 pasifse` | yalnızca görüntü bulunamadıysa çalışır |
+| `Koşulsuz çalış` | varsayılan — adım her zaman çalışır |
+| `Şu görüntü ekranda VARSA çalış` | koşul görüntüsü bulunursa çalışır |
+| `Şu görüntü ekranda YOKSA çalış` | koşul görüntüsü bulunamazsa çalışır |
 
-Koşulu tutmayan adımlar o turda atlanır ve günlüğe yazılır. Listedeki
-**Koşul** sütunu her adımın yanında bunu gösterir (`→ if1 belirle`,
-`if1 aktifse` …).
+Bir koşul seçtiğinizde alanlar açılır:
 
-Koşullar **her turun başında sıfırlanır** ve o turdaki Koşul (IF) adımlarıyla
-yeniden ölçülür. Bir Koşul (IF) adımı da başka bir koşula bağlanabilir.
+1. **🔍 Koşul Görüntüsü Seç** — ekran kararır, aranacak yazının/işaretin
+   çevresine bir kare çizersiniz. **Burada tıklama noktası sorulmaz**; bu alan
+   yalnızca aranır, üzerine tıklanmaz.
+2. **Koşul toleransı (%)** — koşul aranırken kaç piksel farka izin verilsin.
+3. **Koşul araması (ms)** — koşul görüntüsü henüz yoksa ne kadar beklenip
+   aranmaya devam edilsin. `0` = bir kez bak, bekleme.
+4. **Koşulu Şimdi Dene** — koşulun şu anda sağlanıp sağlanmadığını söyler.
+   Listeyi kurarken bununla doğrulayın.
 
-Kullanılan ama hiçbir adımın belirlemediği bir yuva varsa, Başlat'a bastığınızda
-uyarı çıkar — çünkü o yuva pasif sayılır ve ona bağlı adımlar hiç çalışmaz.
+Adımın **kendi hedefi** (tıklayacağı yer) bundan bağımsızdır: koşul ekranın bir
+yerindeki yazı, tıklama başka bir yerdeki düğme olabilir.
 
-> **Örnek:** "Çerez uyarısı çıkarsa Kabul Et'e bas, çıkmazsa doğrudan devam et."
-> 1. `Koşul (IF)` → `if1` · görüntü: çerez kutusunun başlığı
-> 2. `Sol Tık` → çalışma koşulu `if1 aktifse` · hedef: Kabul Et düğmesi
-> 3. `Sol Tık` → çalışma koşulu `Her zaman çalış` · asıl işiniz
+Koşulu tutmayan adım o turda atlanır ve günlüğe yazılır. Listedeki **Koşul**
+sütunu her adımın yanında bunu gösterir (`🔍 onay.png varsa` gibi); koşulsuz
+adımlarda boş kalır. Koşullar her turda yeniden ölçülür.
+
+> **Örnek:** "Ekranda *Öğrenci onayladı* yazıyorsa Onayla düğmesine bas."
+> 1. `Sol Tık` · hedef: Onayla düğmesi
+> 2. Aynı adımda Koşul = `Şu görüntü ekranda VARSA çalış`
+> 3. `Koşul Görüntüsü Seç` → *Öğrenci onayladı* yazısının çevresini çiz
+>
+> Yazı ekranda yoksa o tur bu adım atlanır, liste kalanıyla devam eder.
 
 ## İşlem türleri
 
@@ -165,7 +165,6 @@ uyarı çıkar — çünkü o yuva pasif sayılır ve ona bağlı adımlar hiç 
 | Sol Tuşu Basılı Tut / Sol Tuşu Bırak | koordinat veya görüntü | — |
 | Tekerlek Kaydır | koordinat veya görüntü | Çentik: `3` yukarı, `-3` aşağı |
 | **Görüntüyü Bekle** | yalnızca görüntü | — |
-| **Koşul (IF)** | yalnızca görüntü | — *(sonucu if1…if6 yuvasına yazar)* |
 | Tuşa Bas | — | `enter`, `f5`, `ctrl+c`, `alt+f4` … |
 | Metin Yaz | — | Yazılacak metin (Türkçe karakter destekli) |
 | Bekle | — | — |
