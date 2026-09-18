@@ -1,4 +1,4 @@
-# Otomatik Tıklayıcı — Kullanım Kılavuzu
+# Auto Clicker / Otomatik Tıklayıcı — Kullanım Kılavuzu
 
 Ekranın belirlediğiniz noktalarına, verdiğiniz sırayla ve sürelerle sol/sağ/çift tık
 yapan; tuş kombinasyonu gönderen ve metin yazan Windows programı.
@@ -87,6 +87,8 @@ Her tıklama adımı hedefini iki yoldan biriyle belirtir:
 - **Koordinat** — sabit bir X/Y noktası. Pencere hep aynı yerdeyse en hızlısı.
 - **Görüntü** — ekranda aranan bir kare. Program o kareyi bulur ve
   **bulduğu yerin ortasına** tıklar. Pencere yer değiştirse de çalışır.
+
+![Bölge seçimi ve tıklama noktası](demo.gif)
 
 Kullanımı — **iki adımda, ikisi de fareyle**:
 

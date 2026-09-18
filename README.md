@@ -1,4 +1,6 @@
-# Otomatik Tıklayıcı
+# Auto Clicker / Otomatik Tıklayıcı
+
+![Auto Clicker — bölge seç, tıklanacak noktayı işaretle, program onu bulup tıklasın](demo.gif)
 
 Windows için otomatik fare ve klavye aracı. Ekranın belirlediğiniz noktalarına
 verdiğiniz sırayla ve sürelerle tıklar, tuş gönderir, metin yazar — ve
@@ -80,6 +82,7 @@ iki mimarideki Python ile ayrı ayrı çalıştırın.
 | `kisayol.py` | Sistem geneli kısayol tuşları (`RegisterHotKey`) |
 | `diller.py` | Arayüz metinleri (Türkçe / İngilizce) |
 | `exe_yap.py` | PyInstaller ile exe üretir |
+| `gif_yap.py` | Yukarıdaki tanıtım GIF'ini programı çalıştırarak üretir |
 
 ## Nasıl çalışıyor
 
