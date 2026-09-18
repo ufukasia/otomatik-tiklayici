@@ -1,0 +1,21 @@
+# Kisisel veriler - depoya girmemeli
+ayarlar.json
+goruntuler/
+
+# Derleme ara dosyalari
+derleme_gecici/
+build/
+dist/
+*.spec
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Isletim sistemi
+Thumbs.db
+desktop.ini
+.DS_Store
